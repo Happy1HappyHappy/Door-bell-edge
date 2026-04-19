@@ -23,7 +23,7 @@ CAMERA_ID = os.environ.get("CAMERA_ID", "cam-01")
 MEDIAMTX_URL = os.environ.get("MEDIAMTX_URL", "rtsp://localhost:8554/cam-01")
 FRAME_W = int(os.environ.get("FRAME_WIDTH", "1080"))
 FRAME_H = int(os.environ.get("FRAME_HEIGHT", "720"))
-TARGET_FPS = int(os.environ.get("FPS", "15"))
+TARGET_FPS = int(os.environ.get("FPS", "30"))
 SHOW_PREVIEW = os.environ.get("SHOW_PREVIEW", "true").lower() == "true"
 
 
@@ -43,7 +43,6 @@ def main():
         print(f"ERROR: Cannot open camera {source}")
         sys.exit(1)
 
-    # FFmpeg process to push RTSP to MediaMTX
     ffmpeg_cmd = [
         "ffmpeg",
         "-y",
@@ -53,6 +52,7 @@ def main():
         "-r", str(TARGET_FPS),
         "-i", "-",
         "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
         "-preset", "ultrafast",
         "-tune", "zerolatency",
         "-g", str(TARGET_FPS * 2),  # keyframe every 2 seconds
@@ -87,6 +87,8 @@ def main():
                 ffmpeg_proc.stdin.write(resized.tobytes())
             except BrokenPipeError:
                 print("ERROR: FFmpeg pipe broken")
+                err = ffmpeg_proc.stderr.read().decode()
+                print(f"FFmpeg stderr:\n{err}")
                 break
 
             # Show local preview window
